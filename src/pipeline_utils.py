@@ -2,14 +2,13 @@ from pathlib import Path
 import json
 import numpy as np
 from src.pipeline_config import PipelineConfig
-from concurrent.futures import ProcessPoolExecutor
+from concurrent.futures import ThreadPoolExecutor
 
 from src.operations import refine_masks, collapse_masks
 
 
 def _load_and_refine(args: tuple) -> tuple:
-    """Load a single .npz file and run the refinement pipeline.
-    Top-level function so it can be pickled by ProcessPoolExecutor."""
+    """Load a single .npz file and run the refinement pipeline."""
     npz_path, pipeline = args
     with np.load(npz_path) as data:
         raw_masks = data[data.files[0]]
@@ -64,15 +63,17 @@ def _save_config(config: PipelineConfig, output_dir: Path) -> None:
 
 
 def _save_refined_masks(results: dict, output_dir: Path) -> None:
+    masks_dir = output_dir / "masks"
+    masks_dir.mkdir(exist_ok=True)
     for npz_path, (_, refined_masks) in results.items():
-        out_path = output_dir / f"{npz_path.stem}_refined.npz"
+        out_path = masks_dir / f"{npz_path.stem}_refined.npz"
         np.savez(out_path, refined_masks)
 
 
 def _process_files(npz_paths: list, pipeline: list, parallel: bool) -> list:
     args = [(p, pipeline) for p in npz_paths]
     if parallel:
-        with ProcessPoolExecutor() as executor:
+        with ThreadPoolExecutor() as executor:
             return list(executor.map(_load_and_refine, args))
     return [_load_and_refine(a) for a in args]
 

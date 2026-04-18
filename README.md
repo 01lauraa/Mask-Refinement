@@ -33,8 +33,8 @@ python main.py
 ```
 
 Output is written to `data/output/`:
-- `mask_N_refined.npz` — refined masks ready for downstream use
-- `comparison.png` — visual comparison of raw vs refined (only for batches ≤ 10 files)
+- `masks/mask_N_refined.npz` — refined masks ready for downstream use
+- `comparison.png` — visual comparison of raw vs refined
 - `config.json` — record of which operations were applied
 
 To configure the pipeline, edit `main.py`:

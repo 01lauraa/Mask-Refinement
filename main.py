@@ -6,7 +6,7 @@ from src.operations import (
     constrain_to_main_foreground,
     fill_gaps_nearest_neighbour,
     smooth_semantic_map,
-    )
+)
 
 if __name__ == "__main__":
     config = PipelineConfig(
