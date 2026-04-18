@@ -2,19 +2,17 @@ from pathlib import Path
 import json
 import numpy as np
 from src.pipeline_config import PipelineConfig
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ProcessPoolExecutor
 
 from src.operations import refine_masks, collapse_masks
 
 
 def _load_and_refine(args: tuple) -> tuple:
-    """Load a single .npz file and run the refinement pipeline."""
     npz_path, pipeline = args
     with np.load(npz_path) as data:
         raw_masks = data[data.files[0]]
     refined_masks = refine_masks(raw_masks, pipeline)
     return npz_path, raw_masks, refined_masks
-
 
 def generate_display_masks(raw_masks: np.ndarray, refined_masks: np.ndarray) -> tuple:
     raw_collapsed = collapse_masks(raw_masks).astype(np.float32)
@@ -26,7 +24,6 @@ def generate_display_masks(raw_masks: np.ndarray, refined_masks: np.ndarray) -> 
     refined_display = refined_collapsed.copy()
     refined_display[refined_display == 0] = np.nan
     return raw_display, refined_display
-
 
 def save_comparison_figure(results: dict, output_path: Path) -> None:
     import matplotlib.pyplot as plt
@@ -54,13 +51,11 @@ def save_comparison_figure(results: dict, output_path: Path) -> None:
     fig.savefig(output_path, dpi=200, bbox_inches="tight")
     plt.close(fig)
 
-
 def _save_config(config: PipelineConfig, output_dir: Path) -> None:
     with open(output_dir / "config.json", "w") as f:
         json.dump({
             "pipeline": [step.func.__name__ if hasattr(step, "func") else step.__name__ for step in config.pipeline]
         }, f)
-
 
 def _save_refined_masks(results: dict, output_dir: Path) -> None:
     masks_dir = output_dir / "masks"
@@ -69,14 +64,12 @@ def _save_refined_masks(results: dict, output_dir: Path) -> None:
         out_path = masks_dir / f"{npz_path.stem}_refined.npz"
         np.savez(out_path, refined_masks)
 
-
 def _process_files(npz_paths: list, pipeline: list, parallel: bool) -> list:
     args = [(p, pipeline) for p in npz_paths]
     if parallel:
-        with ThreadPoolExecutor() as executor:
+        with ProcessPoolExecutor() as executor:
             return list(executor.map(_load_and_refine, args))
     return [_load_and_refine(a) for a in args]
-
 
 def run_pipeline(config: PipelineConfig) -> dict:
     output_dir = Path(config.output_dir)

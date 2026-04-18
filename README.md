@@ -91,7 +91,6 @@ with ProcessPoolExecutor() as executor:
 | `apply_hole_filling` | Internal holes caused by reflections or occlusions |
 | `constrain_to_main_foreground` | Disconnected noise outside the main vehicle region |
 | `fill_gaps_nearest_neighbour` | Small background gaps between adjacent parts |
-| `smooth_semantic_map` | Jagged edges along part boundaries |
 
 ## Data Observations
 

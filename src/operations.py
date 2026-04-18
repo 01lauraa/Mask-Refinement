@@ -5,10 +5,6 @@ from scipy.ndimage import distance_transform_edt
 # utility functions
 
 def collapse_masks(masks: np.ndarray) -> np.ndarray:
-    """
-    Collapse multi-channel instance masks into a single 2D semantic map.
-    Later channels overwrite earlier ones, matching the provided visualizer logic.
-    """
     semantic = np.zeros(masks.shape[1:], dtype=masks.dtype)
 
     for channel in masks:
@@ -17,9 +13,6 @@ def collapse_masks(masks: np.ndarray) -> np.ndarray:
     return semantic
 
 def expand_semantic_map(semantic: np.ndarray, reference_masks: np.ndarray) -> np.ndarray:
-    """
-    Expand a semantic map back into the original multi-channel structure.
-    """
     class_ids = reference_masks.max(axis=(1, 2))
     matches = semantic[None] == class_ids[:, None, None]
     return (matches * class_ids[:, None, None]).astype(reference_masks.dtype)
@@ -50,7 +43,7 @@ def apply_hole_filling(masks) -> np.ndarray:
 
 def constrain_to_main_foreground(masks: np.ndarray) -> np.ndarray:
     """
-    Keep only the largest connected foreground region across all channels.
+    keep only the largest connected foreground region across all channels.
     """
     combined_foreground = np.any(masks > 0, axis=0).astype(np.uint8)
 
@@ -70,7 +63,6 @@ def constrain_to_main_foreground(masks: np.ndarray) -> np.ndarray:
 def fill_gaps_nearest_neighbour(masks: np.ndarray, max_gap_area: int = 500) -> np.ndarray:
     """
     Fill small background gaps with the label of the nearest foreground pixel.
-    Large background regions are preserved.
     """
     semantic = collapse_masks(masks)
 
@@ -98,14 +90,6 @@ def fill_gaps_nearest_neighbour(masks: np.ndarray, max_gap_area: int = 500) -> n
     filled_semantic[small_gaps] = nearest_labels[small_gaps]
 
     return expand_semantic_map(filled_semantic, masks)
-
-def smooth_semantic_map(masks: np.ndarray, ksize: int = 5) -> np.ndarray:
-    """
-    Collapse to a semantic map, median-smooth it, then re-expand to channels.
-    """
-    semantic = collapse_masks(masks)
-    smoothed = cv2.medianBlur(semantic.astype(np.uint8), ksize)
-    return expand_semantic_map(smoothed, masks)
 
 # operations pipeline
 

@@ -5,7 +5,6 @@ from src.operations import (
     apply_hole_filling,
     constrain_to_main_foreground,
     fill_gaps_nearest_neighbour,
-    smooth_semantic_map,
 )
 
 if __name__ == "__main__":
@@ -13,10 +12,9 @@ if __name__ == "__main__":
         parallel=True,
         save_figure=True,
         pipeline=[
-            apply_hole_filling,
+            #apply_hole_filling,
             constrain_to_main_foreground,
             partial(fill_gaps_nearest_neighbour, max_gap_area=250),
-            partial(smooth_semantic_map, ksize=3),
         ],
     )
     run_pipeline(config)
