@@ -1,0 +1,16 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Virtual environment
+.venv/
+
+# Tests
+.pytest_cache/
+
+# Experiments output
+data/experiments/
+
+# OS
+.DS_Store
