@@ -33,9 +33,12 @@ python main.py
 ```
 
 Output is written to `data/output/`:
-- `masks/mask_N_refined.npz`: refined masks
-- `comparison.png`: visualize raw vs refined masks
-- `config.json`: record of which operations were applied
+
+`masks/mask_N_refined.npz`: refined masks
+
+`comparison.png`: visualize raw vs refined masks
+
+`config.json`: record of which operations were applied
 
 To configure the pipeline, edit `main.py`. 
 
