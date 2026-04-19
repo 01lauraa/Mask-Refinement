@@ -41,37 +41,21 @@ To configure the pipeline, edit `main.py`.
 
 ```python
 config = PipelineConfig(
-    masks_dir="data/masks",
-    output_dir="data/output",
-    parallel=True,
-    pipeline=[
-        apply_hole_filling,
-        constrain_to_main_foreground,
-        partial(fill_gaps_nearest_neighbour, max_gap_area=250),
-    ],
-)
+        parallel=True,
+        save_figure=True,
+        pipeline=[
+            #apply_hole_filling,
+            constrain_to_main_foreground,
+            partial(fill_gaps_nearest_neighbour, max_gap_area=250),
+        ],
+    )
 ```
 
 ## Architecture
 
-Each refinement operation is a function that takes a mask as input and outputs the refined version. The function run_pipeline loops over a list of operations and applies them in sequence:
+Each refinement operation is a function that takes a mask as input and outputs the refined version. The function run_pipeline loops over a list of operations and applies them in sequence.
 
-```python
-for step in pipeline:
-    refined = step(refined)
-```
-
-To add a new operation to the pipeline, a corresponding function has to be defined in operations.py and appended to the list. 
-
-Write a function that takes and returns a `(C, H, W)` NumPy array:
-
-```python
-def my_new_operation(masks: np.ndarray) -> np.ndarray:
-    # process masks
-    return refined_masks
-```
-
-Add it to the pipeline in `main.py`:
+To add a new operation to the pipeline, a corresponding function that takes and returns a `(C, H, W)` NumPy array has to be defined in operations.py, and added to the list in `main.py`:
 
 ```python
 pipeline=[
@@ -80,12 +64,6 @@ pipeline=[
     constrain_to_main_foreground,
     ...
 ]
-```
-
-Operation parameters are bound with `functools.partial`, so each step always presents the same interface to the runner:
-
-```python
-partial(fill_gaps_nearest_neighbour, max_gap_area=500)
 ```
 
 ### Batch performance
