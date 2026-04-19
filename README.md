@@ -96,9 +96,13 @@ pytest tests/
 ```
 Tests cover: 
 `test_invalid_shape`: invalid input shape raises Error
+
 `test_empty_mask`: empty  masks remains unchanged
+
 `test_disconnected_object`: disconnected objects are removed
+
 `test_hole_filling`: internsal holes are filled with background pixel ids
+
 `test_gap_filling`: small gaps should be filled leaving background intact
 
 
