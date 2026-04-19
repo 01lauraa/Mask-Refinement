@@ -1,6 +1,6 @@
 # Mask Refinement Pipeline
 
-A modular Python pipeline for refining segmentation masks from vehicle damage inspection models. Raw predictions often contain artifacts — internal holes, disconnected noise, and jagged edges — that make them unsuitable for downstream business logic.
+Pipeline for refining segmentation masks of vehicle parts. 
 
 ## Project Structure
 
@@ -10,12 +10,11 @@ A modular Python pipeline for refining segmentation masks from vehicle damage in
 │   ├── pipeline_config.py  # Configuration dataclass
 │   └── pipeline_utils.py   # Orchestration, I/O, visualisation
 ├── scripts/
-│   ├── benchmark.py            # Sequential vs parallel performance comparison
-│   └── npz_mask_visualizer.py  # Standalone mask visualiser
+│   └── npz_mask_visualizer.py  # Mask visualiser
 ├── tests/
 │   └── test_mask_ops.py
 ├── data/
-│   ├── masks/              # Input .npz files
+│   ├── masks/              # Input masks
 │   └── output/             # Refined masks, config, comparison figure
 ├── main.py
 └── requirements.txt
@@ -34,11 +33,11 @@ python main.py
 ```
 
 Output is written to `data/output/`:
-- `masks/mask_N_refined.npz` — refined masks ready for downstream use
-- `comparison.png` — side-by-side visual of raw vs refined masks
+- `masks/mask_N_refined.npz` — refined masks
+- `comparison.png` —visualize raw vs refined masks
 - `config.json` — record of which operations were applied
 
-To configure the pipeline, edit `main.py`:
+To configure the pipeline, edit `main.py`. 
 
 ```python
 config = PipelineConfig(
@@ -49,72 +48,20 @@ config = PipelineConfig(
         apply_hole_filling,
         constrain_to_main_foreground,
         partial(fill_gaps_nearest_neighbour, max_gap_area=250),
-        partial(smooth_semantic_map, ksize=3),
     ],
 )
 ```
 
 ## Architecture
 
-### Plug-and-play pipeline
-
-Each refinement operation is a standalone function with the signature `(masks: np.ndarray) -> np.ndarray`. The pipeline runner applies them in sequence:
+Each refinement operation is a function that takes a mask as input and outputs the refined version. The function run_pipeline loops over a list of operations and applies them in sequence:
 
 ```python
 for step in pipeline:
     refined = step(refined)
 ```
 
-The runner has no knowledge of individual operations — it just loops. Adding a new operation means writing one function and appending it to the list in `main.py`. No other files change.
-
-Operation parameters are bound with `functools.partial`, so each step always presents the same interface to the runner:
-
-```python
-partial(fill_gaps_nearest_neighbour, max_gap_area=500)
-```
-
-### Batch performance
-
-In production, files are processed in parallel using `ProcessPoolExecutor`. Each file is independent, so the work maps directly onto multiple CPU cores:
-
-```python
-with ProcessPoolExecutor() as executor:
-    results = executor.map(_load_and_refine, args)
-```
-
-`_load_and_refine` is defined at module level so it can be pickled and sent to worker processes — a requirement for Python multiprocessing. Setting `parallel=False` in `PipelineConfig` disables this for local development, where the process spawn overhead outweighs the benefit on small batches.
-
-## Refinement Operations
-
-| Operation | Addresses |
-|---|---|
-| `apply_hole_filling` | Internal holes caused by reflections or occlusions |
-| `constrain_to_main_foreground` | Disconnected noise outside the main vehicle region |
-| `fill_gaps_nearest_neighbour` | Small background gaps between adjacent parts |
-
-## Data Observations
-
-Not all provided masks required intervention. Masks 1, 3, and 4 had relatively clean predictions. Mask 2 contained a notable misclassification: pixels at the bottom of the car body were labelled as *mirror*, a geometrically implausible prediction given the spatial position of that class.
-
-The current pipeline does not correct semantic misclassifications — only geometric artifacts. This is a deliberate scope decision: geometric refinement is class-agnostic and generalises across all parts, whereas fixing semantic errors requires class-specific rules.
-
-## Running Tests
-
-```bash
-pytest tests/
-```
-
-Tests cover: invalid input shape, empty masks, disconnected region removal, internal hole filling, and gap filling with large background preservation.
-
-## Scaling to 10x More Data
-
-The parallel architecture already scales with CPU cores — 10x more images takes roughly 10x/N_cores longer, not 10x longer. For further scaling:
-
-- **Chunked processing**: process files in batches to bound memory usage, saving refined masks per chunk rather than holding all results in RAM simultaneously
-- **Distributed processing**: replace `ProcessPoolExecutor` with a task queue (e.g. Celery, Ray) to distribute across multiple machines
-- **Cloud storage**: swap `np.load`/`np.savez` for cloud blob storage reads/writes without changing any operation functions
-
-## Adding New Operations
+To add a new operation to the pipeline, a corresponding function has to be defined in operations.py and appended to the list. 
 
 Write a function that takes and returns a `(C, H, W)` NumPy array:
 
@@ -135,8 +82,41 @@ pipeline=[
 ]
 ```
 
-No other files need to change.
+Operation parameters are bound with `functools.partial`, so each step always presents the same interface to the runner:
 
-## Suggested Post-processing
+```python
+partial(fill_gaps_nearest_neighbour, max_gap_area=500)
+```
 
-For semantic misclassifications like the one observed in mask 2, a spatial consistency filter could be added as a post-processing step. This would flag or suppress predictions where a part class appears outside its expected spatial region — for example, rejecting a *mirror* prediction that falls below the vertical midpoint of the vehicle bounding box. Such a filter would integrate naturally into the existing pipeline as an additional callable step.
+### Batch performance
+
+When possible, operations avoid using loops and use NumPy broadcasting instead. 
+
+To optimize for speed when processing larger batches of masks, files can processed in parallel using `ProcessPoolExecutor` by setting `parallel=True`.
+
+To optimize further, batch processing could be implemented to process files in groups and limit RAM usage.
+
+## Refinement Operations
+
+The following operations were tested in the pipeline:
+
+`apply_hole_filling`: To fill out internal holes 
+
+`constrain_to_main_foreground`: To remove false positives detected outside the car outline 
+
+`fill_gaps_nearest_neighbour`: To fill out holes and small background gaps between adjacent masks 
+
+## Possible additional post-processing steps
+ 
+ Mask 2 seems to misclassify pixels at the bottom of the car as a mirror. To improve classification robustness, spatial filters could be added as a post-processing step to flag or suppress predictions where a part class appears outside its expected spatial region. Eg. rejecting a mirror prediction that falls below the lower half of the vehicle. 
+
+
+## Running Tests
+
+```bash
+pytest tests/
+```
+Tests cover: invalid input shape, empty masks, disconnected region removal, internal hole filling, and gap filling with large background preservation.
+
+
+

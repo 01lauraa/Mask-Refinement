@@ -1,1 +1,1 @@
-{"pipeline": ["fill_gaps_nearest_neighbour", "constrain_to_main_foreground", "smooth_semantic_map"]}
+{"pipeline": ["constrain_to_main_foreground", "fill_gaps_nearest_neighbour"]}
