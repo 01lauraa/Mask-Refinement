@@ -12,7 +12,7 @@ from src.operations import (
     fill_gaps_nearest_neighbour,
 )
 
-def test_invalid_shape_raises_value_error():
+def test_invalid_shape():
     """
     Input is not (C, H, W) → should raise ValueError.
     """
@@ -21,7 +21,7 @@ def test_invalid_shape_raises_value_error():
     with pytest.raises(ValueError):
         refine_masks(masks, [])
 
-def test_empty_mask_returns_empty():
+def test_empty_mask():
     """
     empty mask should remain unchanged.
     """
@@ -38,7 +38,7 @@ def test_empty_mask_returns_empty():
     assert refined.shape == masks.shape
     assert np.array_equal(refined, masks)
 
-def test_disconnected_object_removed():
+def test_disconnected_object():
     """
     Small disconnected region should be removed.
     """
@@ -53,9 +53,9 @@ def test_disconnected_object_removed():
     assert np.any(refined[0, 1:5, 1:5] == 9)
     assert np.all(refined[0, 8:10, 8:10] == 0)
 
-def test_hole_filling_fills_internal_hole():
+def test_hole_filling():
     """
-    Hole filling: internal background hole should be filled with the surrounding class id.
+    Hole filling: internal hole should be filled with the surrounding class id.
     """
     masks = np.zeros((1, 10, 10), dtype=np.uint8)
 
@@ -71,7 +71,7 @@ def test_hole_filling_fills_internal_hole():
     # Surrounding region unchanged
     assert np.all(refined[0, 2:8, 2:8] == 5)
 
-def test_gap_filling_preserves_large_background():
+def test_gap_filling():
     """
     Gap filling: enclosed small gaps should be filled, large outer background should be untouched.
     """

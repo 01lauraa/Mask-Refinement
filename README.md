@@ -70,7 +70,7 @@ pipeline=[
 
 When possible, operations avoid using loops and use NumPy broadcasting instead. 
 
-To optimize for speed when processing larger batches of masks, files can processed in parallel using `ProcessPoolExecutor` by setting `parallel=True`.
+To optimize for speed when processing larger batches of masks, files can be processed in parallel using `ProcessPoolExecutor` by setting `parallel=True`.
 
 To optimize further, batch processing could be implemented to process files in groups and limit RAM usage.
 
@@ -94,7 +94,12 @@ The following operations were tested in the pipeline:
 ```bash
 pytest tests/
 ```
-Tests cover: invalid input shape, empty masks, disconnected region removal, internal hole filling, and gap filling with large background preservation.
+Tests cover: 
+`test_invalid_shape`: invalid input shape raises Error
+`test_empty_mask`: empty  masks remains unchanged
+`test_disconnected_object`: disconnected objects are removed
+`test_hole_filling`: internsal holes are filled with background pixel ids
+`test_gap_filling`: small gaps should be filled leaving background intact
 
 
 
